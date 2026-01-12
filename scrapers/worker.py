@@ -2,81 +2,92 @@ import time
 import requests
 import logging
 import os
-import random
 
-# Configuración del entorno 
+# Configuración
 API_URL = os.getenv("API_URL", "http://backend:8000/ingest/")
 HEALTH_URL = os.getenv("API_URL", "http://backend:8000/products/").replace("/ingest/", "/products/")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def wait_for_backend():
-    """Espera activamente hasta que el Backend responda (Health Check)."""
-    logging.info(f"Conectando a {HEALTH_URL}...")
+    logging.info("Esperando al backend...")
     for i in range(30):
         try:
-            response = requests.get(HEALTH_URL, timeout=5)
-            if response.status_code == 200:
-                logging.info("✅ Backend operativo.")
+            if requests.get(HEALTH_URL, timeout=5).status_code == 200:
                 return True
-        except Exception:
+        except:
             pass
-        logging.info(f"⏳ Esperando backend ({i+1}/30)...")
-        time.sleep(5)
+        time.sleep(2)
     return False
 
 def send_to_backend(products):
-    if not products:
-        return
+    if not products: return
     try:
-        # Enviamos al API Gateway / Backend
+        # Enviamos los datos al backend
         response = requests.post(API_URL, json=products)
         if response.status_code in [200, 201]:
-            logging.info(f"📤 Enviados {len(products)} productos correctamente.")
+            logging.info(f"📤 Inyectados {len(products)} productos de {products[0]['supermarket']}")
         else:
-            logging.error(f"❌ Error servidor: {response.text}")
+            logging.error(f"❌ Error {response.status_code}: {response.text}")
     except Exception as e:
-        logging.error(f"❌ Fallo de conexión: {e}")
+        logging.error(f"❌ Error de conexión: {e}")
 
-# --- SCRAPERS ESPECÍFICOS (Simulación de Ingesta Estable) ---
+# --- DATA SEEDING MASIVO  ---
 
-def get_supermaxi_data():
-    """Simula extracción de Supermaxi (Categoría: Despensa)"""
+def get_micomisariato_data():
     return [
-        {"external_id": "SMX-001", "name": "ARROZ SUPERMAXI 2KG", "price": 3.20, "image_url": "https://imgs.supermaxi.com/smx001.jpg"},
-        {"external_id": "SMX-002", "name": "ATUN REAL EN ACEITE 180G", "price": 1.25, "image_url": "https://imgs.supermaxi.com/smx002.jpg"},
-        {"external_id": "SMX-003", "name": "ACEITE GIRASOL 1 LITRO", "price": 2.99, "image_url": "https://imgs.supermaxi.com/smx003.jpg"},
-        {"external_id": "SMX-004", "name": "LECHE VITA ENTERA 1L", "price": 0.95, "image_url": "https://imgs.supermaxi.com/smx004.jpg"},
-        {"external_id": "SMX-005", "name": "HUEVOS INDAVES ROJOS 12U", "price": 2.15, "image_url": "https://imgs.supermaxi.com/smx005.jpg"},
+        # Alimentos Básicos
+        {"external_id": "MC-01", "supermarket": "Mi Comisariato", "name": "Atún Real en Aceite de Girasol 180g", "price": 1.35, "image_url": "https://m.media-amazon.com/images/I/71w-uKqL+iL.jpg"},
+        {"external_id": "MC-02", "supermarket": "Mi Comisariato", "name": "Arroz Flor Super Arroz 5 kg", "price": 4.50, "image_url": "https://rolandcorp.com.au/blog/wp-content/uploads/2022/05/Rice-grains.jpg"},
+        {"external_id": "MC-03", "supermarket": "Mi Comisariato", "name": "Aceite La Favorita 1 Litro", "price": 2.85, "image_url": "https://santaisabel.vtexassets.com/arquivos/ids/176985/Aceite-Maravilla-1-L.jpg"},
+        {"external_id": "MC-04", "supermarket": "Mi Comisariato", "name": "Leche Entera Vita 1L", "price": 0.95, "image_url": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Milk_glass.jpg"},
+        {"external_id": "MC-05", "supermarket": "Mi Comisariato", "name": "Cubeta Huevos 30 Unidades", "price": 3.99, "image_url": "https://cdn.pixabay.com/photo/2020/04/08/13/46/eggs-5017268_1280.jpg"},
+        {"external_id": "MC-06", "supermarket": "Mi Comisariato", "name": "Azúcar Blanca San Carlos 2kg", "price": 1.95, "image_url": "https://cdn.pixabay.com/photo/2014/11/28/08/03/sugar-548647_1280.jpg"},
+        {"external_id": "MC-07", "supermarket": "Mi Comisariato", "name": "Fideos Tallarín Sumesa 400g", "price": 0.85, "image_url": "https://cdn.pixabay.com/photo/2010/12/13/10/05/pasta-2234_1280.jpg"},
+        
+        # Carnes
+        {"external_id": "MC-08", "supermarket": "Mi Comisariato", "name": "Pollo Entero Mr. Pollo por Kg", "price": 2.60, "image_url": "https://cdn.pixabay.com/photo/2016/11/18/17/42/barbecue-1836053_1280.jpg"},
+        {"external_id": "MC-09", "supermarket": "Mi Comisariato", "name": "Carne Molida Especial Kg", "price": 5.50, "image_url": "https://cdn.pixabay.com/photo/2016/01/22/02/13/meat-1155132_1280.jpg"},
+        
+        # Limpieza y Aseo
+        {"external_id": "MC-10", "supermarket": "Mi Comisariato", "name": "Crema Lavavajillas Lava 900g", "price": 1.60, "image_url": "https://www.supermercadosantamaria.com/documents/10180/10504/170132332_G.jpg"},
+        {"external_id": "MC-11", "supermarket": "Mi Comisariato", "name": "Detergente Deja Floral 2kg", "price": 4.20, "image_url": "https://cdn.pixabay.com/photo/2015/09/05/22/46/detergent-925705_1280.jpg"},
+        {"external_id": "MC-12", "supermarket": "Mi Comisariato", "name": "Crema dental Colgate Max Fresh 75ml", "price": 2.99, "image_url": "https://www.supermercadosantamaria.com/documents/10180/10504/170364860_M.jpg"},
+        {"external_id": "MC-13", "supermarket": "Mi Comisariato", "name": "Papel Higiénico Familia 12 Rollos", "price": 6.50, "image_url": "https://cdn.pixabay.com/photo/2020/03/27/17/02/toilet-paper-4974461_1280.jpg"},
     ]
 
-def get_tia_data():
-    """Simula extracción de Tía (Categoría: Canasta Básica)"""
+def get_aki_data():
     return [
-        {"external_id": "TIA-001", "name": "ARROZ TIA 2000 G", "price": 3.10, "image_url": "https://imgs.tia.com.ec/tia001.jpg"}, # Más barato que SMX
-        {"external_id": "TIA-002", "name": "LATA ATUN REAL 180 GR ACEITE", "price": 1.29, "image_url": "https://imgs.tia.com.ec/tia002.jpg"}, # Más caro
-        {"external_id": "TIA-003", "name": "ACEITE LA FAVORITA 1L", "price": 3.05, "image_url": "https://imgs.tia.com.ec/tia003.jpg"},
-        {"external_id": "TIA-004", "name": "LECHE PARAMONGA 1 LITRO", "price": 0.90, "image_url": "https://imgs.tia.com.ec/tia004.jpg"},
-        {"external_id": "TIA-005", "name": "CUBETA HUEVOS 12 UNIDADES", "price": 2.10, "image_url": "https://imgs.tia.com.ec/tia005.jpg"},
+        # Alimentos Básicos
+        {"external_id": "AKI-01", "supermarket": "Akí", "name": "Atún Real en Aceite de Girasol 180g", "price": 1.28, "image_url": "https://m.media-amazon.com/images/I/71w-uKqL+iL.jpg"},
+        {"external_id": "AKI-02", "supermarket": "Akí", "name": "Arroz Rico 5 kg", "price": 4.35, "image_url": "https://rolandcorp.com.au/blog/wp-content/uploads/2022/05/Rice-grains.jpg"},
+        {"external_id": "AKI-03", "supermarket": "Akí", "name": "Aceite Akí 1 Litro", "price": 2.75, "image_url": "https://santaisabel.vtexassets.com/arquivos/ids/176985/Aceite-Maravilla-1-L.jpg"},
+        {"external_id": "AKI-04", "supermarket": "Akí", "name": "Leche Entera Akí 1L", "price": 0.89, "image_url": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Milk_glass.jpg"},
+        {"external_id": "AKI-05", "supermarket": "Akí", "name": "Cubeta Huevos 30 Unidades", "price": 3.85, "image_url": "https://cdn.pixabay.com/photo/2020/04/08/13/46/eggs-5017268_1280.jpg"},
+        {"external_id": "AKI-06", "supermarket": "Akí", "name": "Azúcar Blanca 2kg", "price": 1.85, "image_url": "https://cdn.pixabay.com/photo/2014/11/28/08/03/sugar-548647_1280.jpg"},
+        {"external_id": "AKI-07", "supermarket": "Akí", "name": "Fideos Tallarín 400g", "price": 0.80, "image_url": "https://cdn.pixabay.com/photo/2010/12/13/10/05/pasta-2234_1280.jpg"},
+        
+        # Carnes
+        {"external_id": "AKI-08", "supermarket": "Akí", "name": "Pollo Entero por Kg", "price": 2.45, "image_url": "https://cdn.pixabay.com/photo/2016/11/18/17/42/barbecue-1836053_1280.jpg"},
+        {"external_id": "AKI-09", "supermarket": "Akí", "name": "Carne para Seco Kg", "price": 5.25, "image_url": "https://cdn.pixabay.com/photo/2016/01/22/02/13/meat-1155132_1280.jpg"},
+        
+        # Limpieza y Aseo
+        {"external_id": "AKI-10", "supermarket": "Akí", "name": "Crema Lavavajillas Lava 900g", "price": 1.50, "image_url": "https://www.supermercadosantamaria.com/documents/10180/10504/170132332_G.jpg"},
+        {"external_id": "AKI-11", "supermarket": "Akí", "name": "Detergente Floral 2kg", "price": 3.99, "image_url": "https://cdn.pixabay.com/photo/2015/09/05/22/46/detergent-925705_1280.jpg"},
+        {"external_id": "AKI-12", "supermarket": "Akí", "name": "Crema dental Colgate Max Fresh 75ml", "price": 2.85, "image_url": "https://www.supermercadosantamaria.com/documents/10180/10504/170364860_M.jpg"},
+        {"external_id": "AKI-13", "supermarket": "Akí", "name": "Papel Higiénico 12 Rollos", "price": 6.20, "image_url": "https://cdn.pixabay.com/photo/2020/03/27/17/02/toilet-paper-4974461_1280.jpg"},
     ]
 
 def run_scrapers():
-    logging.info("🚀 Iniciando ciclo de Scraping: Supermaxi & Tía")
+    logging.info("🚀 Ejecutando Scrapers de Sprint 3 (Mi Comisariato & Akí)...")
     
-    # 1. Procesar Supermaxi
-    smx_products = get_supermaxi_data()
-    for p in smx_products: p['supermarket'] = 'Supermaxi'
-    send_to_backend(smx_products)
-
-    # 2. Procesar Tía
-    tia_products = get_tia_data()
-    for p in tia_products: p['supermarket'] = 'Tia'
-    send_to_backend(tia_products)
+    # Enviamos solo las listas solicitadas
+    send_to_backend(get_micomisariato_data())
+    send_to_backend(get_aki_data())
 
 if __name__ == "__main__":
     if wait_for_backend():
-        # Ciclo infinito para mantener el pod vivo 
         while True:
             run_scrapers()
-            logging.info("💤 Durmiendo 1 hora hasta la próxima actualización...")
+            logging.info("Datos actualizados. Esperando 1 hora...")
             time.sleep(3600)
