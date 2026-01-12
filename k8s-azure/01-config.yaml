@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-secrets
+type: Opaque
+stringData:
+  DB_PASSWORD: "PasswordSeguraAzure123!"
+  DB_USER: "admin_chaniweb"
+  DB_NAME: "chaniweb_prod"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  DB_HOST: "postgres-service"
+  API_URL_INTERNAL: "http://backend-service:8000/ingest/"

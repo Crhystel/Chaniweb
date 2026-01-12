@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scraper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scraper
+  template:
+    metadata:
+      labels:
+        app: scraper
+    spec:
+      containers:
+        - name: scraper
+          image: chaniweb-scraper:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: API_URL
+              valueFrom:
+                { configMapKeyRef: { name: app-config, key: API_URL_INTERNAL } }

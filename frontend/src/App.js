@@ -5,14 +5,19 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Conexión al Backend
-    fetch("http://localhost:8000/products/")
-      .then((res) => res.json())
+    fetch("/api/products/")
+      .then((res) => {
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        return res.json();
+      })
       .then((data) => {
         setProducts(data);
         setLoading(false);
       })
-      .catch((err) => console.error("Error cargando productos:", err));
+      .catch((err) => {
+        console.error("Error cargando productos:", err);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <div>Cargando precios de supermercados...</div>;
