@@ -170,6 +170,7 @@ def run_scraper():
             except Exception as e:
                 
                 logging.error(f"Excepción: {e}")
+            break 
                 
 import re # Asegúrate de tener esto arriba
 
