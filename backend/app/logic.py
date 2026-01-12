@@ -1,4 +1,5 @@
 import re
+from sqlalchemy.sql import func
 from . import models
 
 def normalize_and_save(db, product_in: models.ProductCreate):
@@ -28,7 +29,7 @@ def normalize_and_save(db, product_in: models.ProductCreate):
         if quantity > 0:
             price_per_unit = product_in.price / quantity
 
-    # 2. Guardar o Actualizar en BD (Upsert simple)
+    # 2. Guardar o Actualizar en BD
     existing = db.query(models.ProductDB).filter(
         models.ProductDB.external_id == product_in.external_id,
         models.ProductDB.supermarket == product_in.supermarket
@@ -38,12 +39,18 @@ def normalize_and_save(db, product_in: models.ProductCreate):
         existing.price = product_in.price
         existing.updated_at = func.now()
     else:
-        new_prod = models.ProductDB(
-            **product_in.dict(),
-            normalized_name=product_in.name.upper()
+        # Aquí estaba el error. Lo hacemos explícito campo por campo:
+        new_prod=models.ProductDB(
+            external_id=product_in.external_id,
+            name=product_in.name,
+            supermarket=product_in.supermarket,
+            price=product_in.price,
+            image_url=product_in.image_url,
+            normalized_name=product_in.name.upper(),
             quantity=quantity,
             unit=unit,
             price_per_unit=price_per_unit
         )
         db.add(new_prod)
+    
     db.commit()

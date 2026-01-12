@@ -4,54 +4,63 @@ import json
 import logging
 import os
 
+# Configuración
 API_URL = os.getenv("API_URL", "http://backend:8000/ingest/")
+# URL para verificar salud (Health Check)
+HEALTH_URL = os.getenv("API_URL", "http://backend:8000/products/") 
+
 logging.basicConfig(level=logging.INFO)
+
+def wait_for_backend():
+    """Espera activamente hasta que el Backend responda con 200 OK."""
+    logging.info("Esperando a que el backend inicie...")
+    max_retries = 20
+    for i in range(max_retries):
+        try:
+            response = requests.get(HEALTH_URL.replace("/ingest/", "/products/"), timeout=5)
+            if response.status_code == 200:
+                logging.info("¡Backend conectado exitosamente!")
+                return True
+        except requests.exceptions.ConnectionError:
+            pass
+        except Exception as e:
+            logging.warning(f"Error verificando backend: {e}")
+        
+        logging.info(f"Intento {i+1}/{max_retries}: Backend no listo. Reintentando en 5s...")
+        time.sleep(5)
+    
+    logging.error("El Backend no respondió después de varios intentos.")
+    return False
 
 def send_to_backend(products):
     if not products:
         return
     try:
         response = requests.post(API_URL, json=products)
-        logging.info(f"Enviados {len(products)} productos. Status: {response.status_code}")
+        if response.status_code in [200, 201]:
+            logging.info(f"✅ Enviados {len(products)} productos a la BD.")
+        else:
+            logging.error(f"❌ Error del servidor: {response.text}")
     except Exception as e:
-        logging.error(f"Error enviando al backend: {e}")
+        logging.error(f"❌ Error de conexión enviando datos: {e}")
 
-# --- SCRAPER SUPERMAXI / AKI (Estrategia AJAX) ---
+# --- SCRAPER SUPERMAXI / AKI simulado---
 def scrape_favorita_group(url_ajax, supermarket_name):
-    logging.info(f"Iniciando scraping de {supermarket_name}...")
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-    }
-    
-    # payload estándar para búsqueda/filtro en estos sitios WP
+    logging.info(f"Scraping {supermarket_name}...")
     
     extracted_products = []
     
-    # INTENTO 1: Petición Real 
-    try:
-        data = {
-            'action': 'get_products_by_category', # Nombre común deducido
-            'cat_id': 'all' 
-        }
-        # r = requests.post(url_ajax, data=data, headers=headers)
-        # if r.status_code == 200:
-        #    parse_json_response(r.json())
-        pass 
-    except:
-        pass
-    
     if supermarket_name == "Supermaxi":
-        # Datos simulados 
         mock_data = [
             {"itemCode": "1859357", "description": "BONNA VIT MIEL Y CANELA", "price": 2.42},
             {"itemCode": "1427414", "description": "JOHNSON BABY JAB.ORIGINAL 3X110 G", "price": 4.50},
+            {"itemCode": "1111111", "description": "ATUN REAL 180G", "price": 1.20}, 
         ]
     else: # AKI
         mock_data = [
             {"itemCode": "1767263", "description": "ARROZ SUPER EXTRA 5KG", "price": 6.50},
             {"itemCode": "9999999", "description": "ACEITE GIRA 1 LITRO", "price": 3.25},
+            {"itemCode": "2222222", "description": "ATUN REAL LATA 180 GR", "price": 1.15}, 
         ]
 
     for item in mock_data:
@@ -60,18 +69,17 @@ def scrape_favorita_group(url_ajax, supermarket_name):
             "name": item["description"],
             "price": float(item["price"]),
             "supermarket": supermarket_name,
-            "image_url": "https://via.placeholder.com/150" # Placeholder
+            "image_url": "https://via.placeholder.com/150"
         })
         
     send_to_backend(extracted_products)
 
-# --- SCRAPER TIA (Estrategia HTML/API) ---
+# --- SCRAPER TIA ---
 def scrape_tia():
-    logging.info("Iniciando scraping de Tía...")
-    # Tía usa VTEX usualmente
+    logging.info("Scraping Tía...")
     products = [
         {"external_id": "TIA-001", "name": "ARROZ TIA 5KG", "price": 5.99, "supermarket": "Tia"},
-        {"external_id": "TIA-002", "name": "ATUN REAL 180G", "price": 1.15, "supermarket": "Tia"}
+        {"external_id": "TIA-002", "name": "ATUN VAN CAMPS 180G", "price": 1.35, "supermarket": "Tia"}
     ]
     send_to_backend(products)
 
@@ -81,11 +89,10 @@ def run_all():
     scrape_tia()
 
 if __name__ == "__main__":
-    # Ejecutar inmediatamente al levantar (Sprint 1 requirement)
-    logging.info("Worker iniciado. Ejecutando primera carga...")
-    time.sleep(10) # Esperar a que backend y DB estén listos
-    run_all()
+    # Primero esperamos a que el backend esté verde
+    if wait_for_backend():
+        run_all()
     
-    # Mantener vivo el contenedor
+    # Mantiene el contenedor vivo
     while True:
         time.sleep(3600)
