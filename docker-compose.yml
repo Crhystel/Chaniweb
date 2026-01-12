@@ -1,0 +1,47 @@
+services:
+  # 1. Base de Datos
+  db:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=chaniweb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # 2. Backend (API)
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend/app:/app/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/chaniweb
+    depends_on:
+      - db
+
+  # 3. Workers (Scrapers)
+  scraper:
+    build: ./scrapers
+    environment:
+      - API_URL=http://backend:8000/ingest/
+    depends_on:
+      - backend
+
+  # 4. Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Necesario para hot-reload en Windows/Docker
+    stdin_open: true
+
+volumes:
+  postgres_data:
